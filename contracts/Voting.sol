@@ -21,6 +21,24 @@ contract Voting {
     // Event to log when a vote is delegated
     event VoteDelegated(address from, address to);
 
+    // Function to register as a voter
+    function registerVoter() public {
+        // Ensure the voter is not already registered
+        require(!registeredVoters[msg.sender], "Already registered.");
+        registeredVoters[msg.sender] = true;
+        emit VoterRegistered(msg.sender);
+    }
+        // Function to delegate vote to another voter
+    function delegateVote(address delegatee) public {
+        // Check that the sender is registered
+        require(registeredVoters[msg.sender], "You must be registered to delegate.");
+        // Check that the delegatee is registered
+        require(registeredVoters[delegatee], "Delegatee must be registered.");
+        // Prevent self-delegation
+        require(delegatee != msg.sender, "Cannot delegate vote to yourself.");
+        voteDelegate[msg.sender] = delegatee;
+        emit VoteDelegated(msg.sender, delegatee);
+    }
     // describes a Voter, which has an id and the ID of the candidate they voted for
     address owner;
     function Voting()public {
@@ -70,6 +88,7 @@ contract Voting {
 
     function vote(bytes32 uid, uint candidateID) public {
         // checks if the struct exists for that candidate
+        require(registeredVoters[msg.sender], "Please register before voting.");
         if (candidates[candidateID].doesExist == true) {
             uint voterID = numVoters++; //voterID is the return variable
             voters[voterID] = Voter(uid,candidateID);
