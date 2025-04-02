@@ -7,6 +7,20 @@ contract Voting {
     // to vote for the candidate, since it is one of arguments for the function "vote")
     event AddedCandidate(uint candidateID);
 
+ // --- New variables for extra features ---
+
+    // Voter registration mapping
+    mapping(address => bool) public registeredVoters;
+
+    // Event to log when a voter registers
+    event VoterRegistered(address voter);
+
+    // Mapping to store vote delegation: key is the delegator, value is the delegatee
+    mapping(address => address) public voteDelegate;
+
+    // Event to log when a vote is delegated
+    event VoteDelegated(address from, address to);
+
     // describes a Voter, which has an id and the ID of the candidate they voted for
     address owner;
     function Voting()public {
