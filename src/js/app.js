@@ -8,6 +8,9 @@ import { default as contract } from "truffle-contract"
 // get build artifacts from compiled smart contract and create the truffle contract
 import votingArtifacts from "../../build/contracts/Voting.json"
 var VotingContract = contract(votingArtifacts)
+window.web3 = new Web3(
+  new Web3.providers.HttpProvider("http://127.0.0.1:8080/api")
+);
 
 /*
  * This holds all the functions for the app.
@@ -24,10 +27,10 @@ window.App = {
       instance.getNumOfCandidates().then(function(numOfCandidates){
         // If there are no candidates, add default ones.
         if (numOfCandidates == 0){
-          instance.addCandidate("Candidate1", "Democratic").then(function(result){ 
+          instance.addCandidate("Candidate1", "Labour").then(function(result){ 
             $("#candidate-box").append(`<div class='form-check'><input class='form-check-input' type='checkbox' value='' id=${result.logs[0].args.candidateID}><label class='form-check-label' for=0>Candidate1</label></div>`)
           })
-          instance.addCandidate("Candidate2", "Republican").then(function(result){
+          instance.addCandidate("Candidate2", "Conservative").then(function(result){
             $("#candidate-box").append(`<div class='form-check'><input class='form-check-input' type='checkbox' value='' id=${result.logs[0].args.candidateID}><label class='form-check-label' for=1>Candidate2</label></div>`)
           })
           // update numOfCandidates
@@ -98,8 +101,9 @@ window.App = {
       return instance.registerVoter({ from: window.web3.eth.accounts[0] })
     }).then(function(result) {
       $("#msg").html("<p>Registration successful.</p>")
+      console.log("Registration successful:", result)
     }).catch(function(err) {
-      console.error("ERROR! " + err.message)
+      console.error("Registration error:", err.message)
       $("#msg").html("<p>Registration failed: " + err.message + "</p>")
     })
   },
@@ -119,13 +123,15 @@ window.App = {
 
 // When the page loads, create a web3 instance and set a provider. Then set up the app.
 window.addEventListener("load", function() {
+  /*
   if (typeof web3 !== "undefined") {
     console.warn("Using web3 detected from external source like Metamask")
     window.web3 = new Web3(web3.currentProvider)
   } else {
-    console.warn("No web3 detected. Falling back to http://localhost:9545. Remove this fallback when deploying live.")
-    window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:9545"))
+    console.warn("No web3 detected. Falling back to http://localhost:8080. Remove this fallback when deploying live.")
+    window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8080"))
   }
+    */
   window.App.start()
 
   // Bind event listeners for the new features.
