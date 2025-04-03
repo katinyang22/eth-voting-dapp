@@ -15,20 +15,21 @@ contract Voting {
     // Event to log when a voter registers
     event VoterRegistered(address voter);
 
-    // Mapping to store vote delegation: key is the delegator, value is the delegatee
-    mapping(address => address) public voteDelegate;
-
-    // Event to log when a vote is delegated
-    event VoteDelegated(address from, address to);
-
-    // Function to register as a voter
+     // Function to register as a voter
     function registerVoter() public {
         // Ensure the voter is not already registered
         require(!registeredVoters[msg.sender], "Already registered.");
         registeredVoters[msg.sender] = true;
         emit VoterRegistered(msg.sender);
     }
-        // Function to delegate vote to another voter
+
+    // Mapping to store vote delegation: key is the delegator, value is the delegatee
+    mapping(address => address) public voteDelegate;
+
+    // Event to log when a vote is delegated
+    event VoteDelegated(address from, address to);
+
+    // Function to delegate vote to another voter
     function delegateVote(address delegatee) public {
         // Check that the sender is registered
         require(registeredVoters[msg.sender], "You must be registered to delegate.");
