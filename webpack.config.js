@@ -32,5 +32,15 @@ module.exports = {
         }
       }
     ]
+  },
+  devServer: {
+    port: 8080,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:7545", // Port where Ganache is running
+        changeOrigin: true,
+        pathRewrite: { "^/api": "" }
+      }
+    }
   }
 }
