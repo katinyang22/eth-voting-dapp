@@ -29,10 +29,14 @@ window.App = {
         if (numOfCandidates == 0){
           instance.addCandidate("Candidate1", "Labour").then(function(result){ 
             $("#candidate-box").append(`<div class='form-check'><input class='form-check-input' type='checkbox' value='' id=${result.logs[0].args.candidateID}><label class='form-check-label' for=0>Candidate1</label></div>`)
-          })
+          }).catch(function(err) {
+            console.error("addCandidate1 error:", err.message);
+          });
           instance.addCandidate("Candidate2", "Conservative").then(function(result){
             $("#candidate-box").append(`<div class='form-check'><input class='form-check-input' type='checkbox' value='' id=${result.logs[0].args.candidateID}><label class='form-check-label' for=1>Candidate2</label></div>`)
-          })
+          }).catch(function(err) {
+            console.error("addCandidate1 error:", err.message);
+          });
           // update numOfCandidates
           numOfCandidates = 2 
         }
@@ -46,9 +50,9 @@ window.App = {
         }
         window.numOfCandidates = numOfCandidates 
       })
-    }).catch(function(err){ 
-      console.error("ERROR! " + err.message)
-    })
+    }).catch(function(err) {
+      console.error("getNumOfCandidates error:", err.message);
+    });
   },
 
   // Function that is called when user clicks the "vote" button
