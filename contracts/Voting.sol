@@ -6,40 +6,9 @@ contract Voting {
     // appropriately display the candidate with the right element id (it is used
     // to vote for the candidate, since it is one of arguments for the function "vote")
     event AddedCandidate(uint candidateID);
+    event VoterRegistered(address voterAddress, bytes32 uid);
+    event DelegationSet(address from, address to);
 
- // --- New variables for extra features ---
-
-    // Voter registration mapping
-    mapping(address => bool) public registeredVoters;
-
-    // Event to log when a voter registers
-    event VoterRegistered(address voter);
-
-     // Function to register as a voter
-    function registerVoter() public {
-        // Ensure the voter is not already registered
-        require(!registeredVoters[msg.sender], "Already registered.");
-        registeredVoters[msg.sender] = true;
-        emit VoterRegistered(msg.sender);
-    }
-
-    // Mapping to store vote delegation: key is the delegator, value is the delegatee
-    mapping(address => address) public voteDelegate;
-
-    // Event to log when a vote is delegated
-    event VoteDelegated(address from, address to);
-
-    // Function to delegate vote to another voter
-    function delegateVote(address delegatee) public {
-        // Check that the sender is registered
-        require(registeredVoters[msg.sender], "You must be registered to delegate.");
-        // Check that the delegatee is registered
-        require(registeredVoters[delegatee], "Delegatee must be registered.");
-        // Prevent self-delegation
-        require(delegatee != msg.sender, "Cannot delegate vote to yourself.");
-        voteDelegate[msg.sender] = delegatee;
-        emit VoteDelegated(msg.sender, delegatee);
-    }
     // describes a Voter, which has an id and the ID of the candidate they voted for
     address owner;
     function Voting()public {
@@ -52,6 +21,9 @@ contract Voting {
     struct Voter {
         bytes32 uid; // bytes32 type are basically strings
         uint candidateIDVote;
+        bool isRegistered;
+        address delegatedTo;
+        bool hasDelegated;
     }
     // describes a Candidate
     struct Candidate {
@@ -74,6 +46,8 @@ contract Voting {
     // These mappings will hold all the candidates and Voters respectively
     mapping (uint => Candidate) candidates;
     mapping (uint => Voter) voters;
+    mapping (address => uint) addressToVoterID;
+    mapping (bytes32 => bool) registeredUIDs;
     
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *  These functions perform transactions, editing the mappings *
@@ -87,13 +61,39 @@ contract Voting {
         AddedCandidate(candidateID);
     }
 
+    function registerVoter(bytes32 uid) public {
+        require(!registeredUIDs[uid], "UID already registered");
+        require(addressToVoterID[msg.sender] == 0, "Address already registered");
+        
+        uint voterID = numVoters++;
+        voters[voterID] = Voter(uid, 0, true, address(0), false);
+        addressToVoterID[msg.sender] = voterID;
+        registeredUIDs[uid] = true;
+        
+        emit VoterRegistered(msg.sender, uid);
+    }
+
+    function delegateVote(address to) public {
+        uint voterID = addressToVoterID[msg.sender];
+        require(voters[voterID].isRegistered, "Voter not registered");
+        require(!voters[voterID].hasDelegated, "Already delegated");
+        require(to != msg.sender, "Cannot delegate to self");
+        require(addressToVoterID[to] != 0, "Delegatee not registered");
+        
+        voters[voterID].delegatedTo = to;
+        voters[voterID].hasDelegated = true;
+        
+        emit DelegationSet(msg.sender, to);
+    }
+
     function vote(bytes32 uid, uint candidateID) public {
-        // checks if the struct exists for that candidate
-        require(registeredVoters[msg.sender], "Please register before voting.");
-        if (candidates[candidateID].doesExist == true) {
-            uint voterID = numVoters++; //voterID is the return variable
-            voters[voterID] = Voter(uid,candidateID);
-        }
+        uint voterID = addressToVoterID[msg.sender];
+        require(voters[voterID].isRegistered, "Voter not registered");
+        require(!voters[voterID].hasDelegated, "Cannot vote if delegated");
+        require(candidates[candidateID].doesExist, "Candidate does not exist");
+        require(voters[voterID].uid == uid, "UID mismatch");
+        
+        voters[voterID].candidateIDVote = candidateID;
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -124,5 +124,16 @@ contract Voting {
     // returns candidate information, including its ID, name, and party
     function getCandidate(uint candidateID) public view returns (uint,bytes32, bytes32) {
         return (candidateID,candidates[candidateID].name,candidates[candidateID].party);
+    }
+
+    function getVoterInfo(address voterAddress) public view returns (bytes32, bool, address, bool) {
+        uint voterID = addressToVoterID[voterAddress];
+        require(voters[voterID].isRegistered, "Voter not registered");
+        return (
+            voters[voterID].uid,
+            voters[voterID].isRegistered,
+            voters[voterID].delegatedTo,
+            voters[voterID].hasDelegated
+        );
     }
 }
