@@ -1,55 +1,58 @@
-// import CSS. Webpack with deal with it
-import "../css/style.css"
+// Import CSS. Webpack will handle it
+import "../css/style.css";
 
-// Import libraries we need.
-import { default as Web3 } from "web3"
-import { default as contract } from "truffle-contract"
+// Import necessary libraries
+import Web3 from "web3";
+import contract from "truffle-contract";
 
-// get build artifacts from compiled smart contract and create the truffle contract
-import votingArtifacts from "../../build/contracts/Voting.json"
-var VotingContract = contract(votingArtifacts)
+// Import compiled smart contract artifacts
+import votingArtifacts from "../../build/contracts/Voting.json";
+var VotingContract = contract(votingArtifacts);
 
-
-/*
- * This holds all the functions for the app
- */
 window.App = {
   web3Provider: null,
   contracts: {},
   account: null,
 
   init: async function () {
-    return App.initWeb3();
+    await App.initWeb3();
+    await App.initContract();
   },
 
-  initWeb3: function () {
-    let web3;
-   if (typeof window.ethereum !== 'undefined') {
-   web3 = new Web3(window.ethereum);
-   window.ethereum.enable(); // request access
-   } else {
-   console.log('No Ethereum provider detected.');
-   }
-
+  initWeb3: async function () {
+    if (typeof window.ethereum !== 'undefined') {
+      // Initialize web3 with the Ethereum provider
+      App.web3Provider = window.ethereum;
+      window.web3 = new Web3(window.ethereum);
+      try {
+        // Request account access if needed
+        await window.ethereum.enable();
+        console.log("Ethereum provider enabled");
+      } catch (error) {
+        console.error("User denied account access:", error);
+      }
+    } else {
+      console.log("No Ethereum provider detected. Please install MetaMask.");
+    }
   },
 
   initContract: function () {
     App.contracts.Voting = VotingContract;
     App.contracts.Voting.setProvider(App.web3Provider);
     console.log("Voting contract initialized:", App.contracts.Voting);
-  
-    return App.render();
-    console.log("Contract Voting initialized?", App.contracts.Voting);
+    
+    return App.render(); // Render the UI once the contract is initialized
   },
-  
-  render: function () {
-    web3.eth.getCoinbase(function (err, account) {
-      if (!err) {
-        App.account = account;
-      }
-    });
 
-    App.loadCandidates();
+  render: function () {
+    // Get the user's Ethereum account address
+    web3.eth.getAccounts().then((accounts) => {
+      App.account = accounts[0]; // Set the user's account
+      console.log("Account address:", App.account);
+      // You can also use this account in other functions to interact with the contract
+    }).catch((err) => {
+      console.error("Error getting account:", err);
+    });
   },
 
   loadCandidates: function () {
@@ -102,10 +105,7 @@ window.App = {
 
       for (let i = 0; i < num; i++) {
         App.contracts.Voting.deployed().then(function (instance) {
-          return Promise.all([
-            instance.getCandidateName(i),
-            instance.totalVotesFor(i)
-          ]);
+          return Promise.all([instance.getCandidateName(i), instance.totalVotesFor(i)]);
         }).then(function ([name, count]) {
           const candidateName = web3.toAscii(name).replace(/\u0000/g, '');
           const result = `<p>${candidateName}: ${count.toString()} vote(s)</p>`;
@@ -159,15 +159,20 @@ if (typeof web3 !== 'undefined') {
 }
 web3 = new Web3(App.web3Provider);
 
-
-
 $(function () {
+  // Ensure App is initialized before binding events
   App.init().then(() => {
-    // Only bind after init
-    $("#registerBtn").click(App.registerVoter);
-    $("#voteBtn").click(App.vote);
-    $("#delegateBtn").click(App.delegateVote);
+    // Bind events to buttons after App initialization
+    $("#registerBtn").click(function() {
+      App.registerVoter();
+    });
+
+    $("#voteBtn").click(function() {
+      App.vote();
+    });
+
+    $("#delegateBtn").click(function() {
+      App.delegateVote();
+    });
   });
 });
-
-

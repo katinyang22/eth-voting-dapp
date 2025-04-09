@@ -37,7 +37,7 @@ module.exports = {
     port: 8080,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:7545", // Port where Ganache is running
+        target: "http://127.0.0.1:8545", // Port where Ganache is running
         changeOrigin: true,
         pathRewrite: { "^/api": "" }
       }

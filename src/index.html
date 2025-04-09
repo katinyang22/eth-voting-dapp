@@ -11,23 +11,23 @@
     
     <!-- 1) Include jQuery BEFORE app.js -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/web3@0.20.7/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.2.11/dist/web3.min.js"></script>
 
     <!-- Truffle Contract JS -->
     <script src="https://cdn.jsdelivr.net/npm/truffle-contract@3.0.6/dist/truffle-contract.min.js"></script>
 
-    
     <!-- 2) Then load your bundled JavaScript -->
-    <script src="app.js"></script>
+    <script src="build/app.js"></script>
   </head>
   <body class="p-4">
     <h1 class="mb-4">Ethereum Voting DApp</h1>
+    
 
     <!-- Section: Voter Registration -->
     <section id="registration-section" class="mb-4">
       <h2>Voter Registration</h2>
       <p>Click the button below to register as a voter on the blockchain.</p>
-      <button id="registerButton" class="btn btn-primary">Register as Voter</button>
+      <button id="registerBtn" class="btn btn-primary">Register as Voter</button>
     </section>
 
     <!-- Section: Vote Delegation -->
@@ -39,7 +39,7 @@
           <input type="text" id="delegateAddress" class="form-control" placeholder="0x123..." />
         </div>
         <div class="col-auto">
-          <button id="delegateButton" class="btn btn-primary">Delegate Vote</button>
+          <button id="delegateBtn" class="btn btn-primary">Delegate Vote</button>
         </div>
       </div>
     </section>
@@ -54,14 +54,14 @@
       <div id="candidate-box" class="mb-3">
         <!-- Candidate checkboxes inserted by app.js -->
       </div>
-      <button class="btn btn-primary" onclick="App.vote()">Vote</button>
+      <button class="btn btn-primary" id="voteBtn">Vote</button>
     </section>
 
     <!-- Section: Count Votes -->
     <section id="results-section" class="mb-4">
       <h2>Check Results</h2>
       <p>Click the button below to see how many votes each candidate has.</p>
-      <button class="btn btn-primary" onclick="App.findNumOfVotes()">Count Votes</button>
+      <button class="btn btn-primary" id="countVotesBtn">Count Votes</button>
       <div id="vote-box" class="mt-3">
         <!-- Candidate vote totals inserted by app.js -->
       </div>
@@ -73,13 +73,26 @@
     <!-- Hook up buttons to JS -->
     <script>
       $(document).ready(function () {
-        $('#registerButton').click(function () {
-          App.registerVoter();
-        });
+        // Ensure the App object is initialized before binding events
+        if (typeof App !== 'undefined') {
+          $('#registerBtn').click(function () {
+            App.registerVoter();
+          });
 
-        $('#delegateButton').click(function () {
-          App.delegateVote();
-        });
+          $('#delegateBtn').click(function () {
+            App.delegateVote();
+          });
+
+          $('#voteBtn').click(function () {
+            App.vote();
+          });
+
+          $('#countVotesBtn').click(function () {
+            App.findNumOfVotes();
+          });
+        } else {
+          console.error("App object not initialized.");
+        }
       });
     </script>
   </body>
