@@ -1,139 +1,119 @@
-pragma solidity ^0.4.18;
-// written for Solidity version 0.4.18 and above that doesnt break functionality
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.20;
 
 contract Voting {
-    // an event that is called whenever a Candidate is added so the frontend could
-    // appropriately display the candidate with the right element id (it is used
-    // to vote for the candidate, since it is one of arguments for the function "vote")
-    event AddedCandidate(uint candidateID);
-    event VoterRegistered(address voterAddress, bytes32 uid);
-    event DelegationSet(address from, address to);
+    event AddedCandidate(uint indexed candidateID);
+    event VoterRegistered(address indexed voter, bytes32 uid);
+    event DelegationSet(address indexed from, address indexed to);
 
-    // describes a Voter, which has an id and the ID of the candidate they voted for
-    address owner;
-    function Voting()public {
-        owner=msg.sender;
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
     }
-    modifier onlyOwner {
-        require(msg.sender == owner);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner allowed");
         _;
     }
+
     struct Voter {
-        bytes32 uid; // bytes32 type are basically strings
+        bytes32 uid;
         uint candidateIDVote;
         bool isRegistered;
         address delegatedTo;
         bool hasDelegated;
     }
-    // describes a Candidate
+
     struct Candidate {
-        bytes32 name;
-        bytes32 party; 
-        // "bool doesExist" is to check if this Struct exists
-        // This is so we can keep track of the candidates 
-        bool doesExist; 
+        string name;
+        string party;
+        bool doesExist;
     }
 
-    // These state variables are used keep track of the number of Candidates/Voters 
-    // and used to as a way to index them     
-    uint numCandidates; // declares a state variable - number Of Candidates
-    uint numVoters;
+    uint public numCandidates;
+    uint public numVoters;
 
-    
-    // Think of these as a hash table, with the key as a uint and value of 
-    // the struct Candidate/Voter. These mappings will be used in the majority
-    // of our transactions/calls
-    // These mappings will hold all the candidates and Voters respectively
-    mapping (uint => Candidate) candidates;
-    mapping (uint => Voter) voters;
-    mapping (address => uint) addressToVoterID;
-    mapping (bytes32 => bool) registeredUIDs;
-    
-    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-     *  These functions perform transactions, editing the mappings *
-     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+    mapping(uint => Candidate) public candidates;
+    mapping(uint => Voter)    public voters;
+    mapping(address => uint)  public addressToVoterID;
+    mapping(bytes32 => bool)  public registeredUIDs;
 
-    function addCandidate(bytes32 name, bytes32 party) onlyOwner public {
-        // candidateID is the return variable
-        uint candidateID = numCandidates++;
-        // Create new Candidate Struct with name and saves it to storage.
-        candidates[candidateID] = Candidate(name,party,true);
-        AddedCandidate(candidateID);
+    function addCandidate(string memory name, string memory party) external onlyOwner {
+        uint id = numCandidates++;
+        candidates[id] = Candidate(name, party, true);
+        emit AddedCandidate(id);
     }
 
-    function registerVoter(bytes32 uid) public {
-        require(!registeredUIDs[uid], "UID already registered");
-        require(addressToVoterID[msg.sender] == 0, "Address already registered");
-        
-        uint voterID = numVoters++;
-        voters[voterID] = Voter(uid, 0, true, address(0), false);
-        addressToVoterID[msg.sender] = voterID;
-        registeredUIDs[uid] = true;
-        
-        emit VoterRegistered(msg.sender, uid);
-    }
+    function registerVoter(bytes32 uid) external {
+    require(!registeredUIDs[uid],                "UID already registered");
+    require(
+        voters[addressToVoterID[msg.sender]].isRegistered == false,
+        "Address already registered"
+    );
 
-    function delegateVote(address to) public {
+    uint voterID = numVoters++;
+    voters[voterID]            = Voter(uid, 0, true, address(0), false);
+    addressToVoterID[msg.sender] = voterID;
+    registeredUIDs[uid]         = true;
+
+    emit VoterRegistered(msg.sender, uid);
+}
+
+    function delegateVote(address to) external {
         uint voterID = addressToVoterID[msg.sender];
-        require(voters[voterID].isRegistered, "Voter not registered");
+        require(voters[voterID].isRegistered, "Not registered");
         require(!voters[voterID].hasDelegated, "Already delegated");
         require(to != msg.sender, "Cannot delegate to self");
-        require(addressToVoterID[to] != 0, "Delegatee not registered");
-        
+
+        uint toID = addressToVoterID[to];
+        require(voters[toID].isRegistered, "Delegatee not registered");
+
         voters[voterID].delegatedTo = to;
         voters[voterID].hasDelegated = true;
-        
+
         emit DelegationSet(msg.sender, to);
     }
 
-    function vote(bytes32 uid, uint candidateID) public {
-        uint voterID = addressToVoterID[msg.sender];
-        require(voters[voterID].isRegistered, "Voter not registered");
-        require(!voters[voterID].hasDelegated, "Cannot vote if delegated");
-        require(candidates[candidateID].doesExist, "Candidate does not exist");
-        require(voters[voterID].uid == uid, "UID mismatch");
-        
-        voters[voterID].candidateIDVote = candidateID;
-    }
+    function vote(uint candidateID) external {
+    uint voterID = addressToVoterID[msg.sender];
+    require(voters[voterID].isRegistered, "Voter not registered");
+    require(!voters[voterID].hasDelegated, "Cannot vote if delegated");
+    require(candidates[candidateID].doesExist, "Candidate does not exist");
+    // No UID supplied – we trust the stored one
+    voters[voterID].candidateIDVote = candidateID;
+ }
 
-    /* * * * * * * * * * * * * * * * * * * * * * * * * * 
-     *  Getter Functions, marked by the key word "view" *
-     * * * * * * * * * * * * * * * * * * * * * * * * * */
     
-
-    // finds the total amount of votes for a specific candidate by looping
-    // through voters 
-    function totalVotes(uint candidateID) view public returns (uint) {
-        uint numOfVotes = 0; // we will return this
+    function totalVotes(uint candidateID) public view returns (uint) {
+        uint count;
         for (uint i = 0; i < numVoters; i++) {
-            // if the voter votes for this specific candidate, we increment the number
-            if (voters[i].candidateIDVote == candidateID) {
-                numOfVotes++;
-            }
+            if (voters[i].candidateIDVote == candidateID) count++;
         }
-        return numOfVotes; 
+        return count;
     }
 
-    function getNumOfCandidates() public view returns(uint) {
-        return numCandidates;
-    }
+    function getCandidate(uint id)
+        external
+        view
+        returns (uint, string memory, string memory)
+    {
+        Candidate memory c = candidates[id];
+        return (id, c.name, c.party);
+    } 
 
-    function getNumOfVoters() public view returns(uint) {
-        return numVoters;
-    }
-    // returns candidate information, including its ID, name, and party
-    function getCandidate(uint candidateID) public view returns (uint,bytes32, bytes32) {
-        return (candidateID,candidates[candidateID].name,candidates[candidateID].party);
-    }
+    function getNumOfCandidates() public view returns (uint) {
+    return numCandidates;
+}
 
-    function getVoterInfo(address voterAddress) public view returns (bytes32, bool, address, bool) {
-        uint voterID = addressToVoterID[voterAddress];
-        require(voters[voterID].isRegistered, "Voter not registered");
-        return (
-            voters[voterID].uid,
-            voters[voterID].isRegistered,
-            voters[voterID].delegatedTo,
-            voters[voterID].hasDelegated
-        );
+    function getVoterInfo(address voterAddr)
+        external
+        view
+        returns (bytes32 uid, bool isRegistered, address delegatedTo, bool hasDelegated)
+    {
+        uint id = addressToVoterID[voterAddr];
+        require(voters[id].isRegistered, "Not registered");
+        Voter memory v = voters[id];
+        return (v.uid, v.isRegistered, v.delegatedTo, v.hasDelegated);
     }
 }

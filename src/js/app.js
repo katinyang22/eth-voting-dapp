@@ -1,13 +1,10 @@
-// Import CSS. Webpack will handle it
-import "../css/style.css";
-
-// Import necessary libraries
 import Web3 from "web3";
-import contract from "truffle-contract";
-
-// Import compiled smart contract artifacts
 import votingArtifacts from "../../build/contracts/Voting.json";
-var VotingContract = contract(votingArtifacts);
+import "../css/style.css";
+import contract from "@truffle/contract";
+
+let web3;
+let VotingContract = contract(votingArtifacts);
 
 window.App = {
   web3Provider: null,
@@ -17,162 +14,178 @@ window.App = {
   init: async function () {
     await App.initWeb3();
     await App.initContract();
+    App.bindEvents();
+    await App.loadCandidates();
   },
 
   initWeb3: async function () {
-    if (typeof window.ethereum !== 'undefined') {
-      // Initialize web3 with the Ethereum provider
+    if (window.ethereum) {
       App.web3Provider = window.ethereum;
-      window.web3 = new Web3(window.ethereum);
+      web3 = new Web3(window.ethereum);
       try {
-        // Request account access if needed
-        await window.ethereum.enable();
-        console.log("Ethereum provider enabled");
-      } catch (error) {
-        console.error("User denied account access:", error);
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        const accounts = await web3.eth.getAccounts();
+        App.account = accounts[0];
+        console.log("🦊 MetaMask connected:", App.account);
+      } catch (err) {
+        console.error("MetaMask connection rejected", err);
       }
     } else {
-      console.log("No Ethereum provider detected. Please install MetaMask.");
+      console.error("🛑 No Ethereum provider found. Install MetaMask.");
     }
   },
 
-  initContract: function () {
-    App.contracts.Voting = VotingContract;
-    App.contracts.Voting.setProvider(App.web3Provider);
-    console.log("Voting contract initialized:", App.contracts.Voting);
+  initContract: async function () {
+    try {
+      VotingContract.setProvider(App.web3Provider);
+      App.contracts.Voting = await VotingContract.deployed();
+      console.log("✅ Contract loaded at", App.contracts.Voting.address);
+    } catch (err) {
+      console.error("❌ Contract not deployed to current network:", err.message);
+      $("#msg").html("<p class='text-danger'>Contract not deployed. Please check your network.</p>");
+    }
+  },
+
+  bindEvents: function () {
+    $("#registerButton").click(App.registerVoter);
+    $("#voteBtn").click(App.vote);
+    $("#delegateBtn").click(App.delegateVote);
+    $("#countVotesBtn").click(App.findNumOfVotes);
+  },
+
+  loadCandidates: async function () {
+    if (!App.contracts.Voting) return;
+    try {
+    const bnCount = await App.contracts.Voting.getNumOfCandidates();
+    const count   = bnCount.toNumber();                          // convert BN → JS #
+    console.log("🧾 Number of candidates:", count);
+    $("#candidate-box").empty();
+
+    for (let i = 0; i < count; i++) {
+      const result = await App.contracts.Voting.getCandidate.call(i);
+  
+      const id    = result[0].toNumber();      
+      const name  = result[1];                 
+      const party = result[2];                 
     
-    return App.render(); // Render the UI once the contract is initialized
-  },
-
-  render: function () {
-    // Get the user's Ethereum account address
-    web3.eth.getAccounts().then((accounts) => {
-      App.account = accounts[0]; // Set the user's account
-      console.log("Account address:", App.account);
-      // You can also use this account in other functions to interact with the contract
-    }).catch((err) => {
-      console.error("Error getting account:", err);
-    });
-  },
-
-  loadCandidates: function () {
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.getNumOfCandidates();
-    }).then(function (num) {
-      $("#candidate-box").empty();
-
-      for (let i = 0; i < num; i++) {
-        App.contracts.Voting.deployed().then(function (instance) {
-          return instance.getCandidateName(i);
-        }).then(function (name) {
-          const candidateName = web3.toAscii(name).replace(/\u0000/g, '');
-          const checkbox = `<div class="form-check">
-              <input class="form-check-input" type="radio" name="candidate" id="candidate${i}" value="${i}">
-              <label class="form-check-label" for="candidate${i}">
-                ${candidateName}
-              </label>
-            </div>`;
-          $("#candidate-box").append(checkbox);
-        });
-      }
-    });
+      const html = `
+        <div class="form-check">
+          <input class="form-check-input" type="radio"
+                 name="candidate" id="candidate${id}" value="${id}">
+          <label class="form-check-label" for="candidate${id}">
+            ${name} (${party})
+          </label>
+        </div>`;
+      $("#candidate-box").append(html);
+    }
+    
+    } catch (err) {
+      console.error("⚠️  loadCandidates threw:", err);
+      $("#candidate-box").html(
+        `<pre class="text-danger">loadCandidates error:\n${err.message || err}</pre>`
+      );
+    }    
   },
 
   vote: async function () {
-    const userId = $("#id-input").val();
-    const candidateIndex = $("input[name='candidate']:checked").val();
-
-    if (!userId || candidateIndex === undefined) {
-      $("#msg").html("<p class='text-danger'>Please enter your ID and select a candidate.</p>");
-      return;
-    }
-
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.vote(userId, candidateIndex, { from: App.account });
-    }).then(function (result) {
-      $("#msg").html("<p class='text-success'>Vote cast successfully!</p>");
-    }).catch(function (err) {
-      console.error(err.message);
-      $("#msg").html("<p class='text-danger'>Error submitting vote.</p>");
-    });
-  },
-
-  findNumOfVotes: async function () {
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.getNumOfCandidates();
-    }).then(function (num) {
-      $("#vote-box").empty();
-
-      for (let i = 0; i < num; i++) {
-        App.contracts.Voting.deployed().then(function (instance) {
-          return Promise.all([instance.getCandidateName(i), instance.totalVotesFor(i)]);
-        }).then(function ([name, count]) {
-          const candidateName = web3.toAscii(name).replace(/\u0000/g, '');
-          const result = `<p>${candidateName}: ${count.toString()} vote(s)</p>`;
-          $("#vote-box").append(result);
-        });
-      }
-    });
-  },
-
-  registerVoter: function () {
-    if (!App.contracts.Voting) {
-      console.error("Voting contract not initialized.");
+    const uid = $("#id-input").val();
+    const candidateID = $("input[name='candidate']:checked").val();
+  
+    // ✅ Add these for debugging
+    console.log("UID entered:", uid);
+    console.log("Candidate selected:", candidateID);
+  
+    if (!uid || candidateID === undefined) {
+      $("#msg").html("<p class='text-danger'>Please enter your Voter ID and select a candidate.</p>");
       return;
     }
   
-    const user = App.account;
-  
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.registerVoter(user, { from: App.account });
-    }).then(function () {
-      $("#msg").html("<p class='text-success'>Successfully registered as a voter.</p>");
-    }).catch(function (err) {
-      console.error("Register Error: ", err.message);
-      $("#msg").html("<p class='text-danger'>Error registering voter. You may already be registered.</p>");
-    });
+    try {
+      const instance = App.contracts.Voting;
+      await instance.vote(candidateID, { from: App.account });
+      $("#msg").html("<p class='text-success'>✅ Vote submitted successfully.</p>");
+    } catch (err) {
+      console.error("Vote Error:", err.message);
+      $("#msg").html("<p class='text-danger'>❌ Error submitting vote.</p>");
+    }
   },
   
-  delegateVote: function () {
+
+  registerVoter: async function () {
+    const uid = $("#uidInput").val().trim();
+    if (!uid) {
+    $("#msg").html("<p class='text-danger'>Please enter a UID first.</p>");
+    return;
+    }
+
+    try {
+      const instance = App.contracts.Voting;
+      await instance.registerVoter(web3.utils.asciiToHex(uid), { from: App.account });
+      $("#msg").html("<p class='text-success'>🎉 Registered successfully as a voter.</p>");
+    } catch (err) {
+      console.error("Register Error:", err.message);
+      $("#msg").html("<p class='text-danger'>❌ Already registered or failed.</p>");
+    }
+  },
+
+  delegateVote: async function () {
     const toAddress = $("#delegateAddress").val();
-
-    if (!web3.isAddress(toAddress)) {
+    if (!web3.utils.isAddress(toAddress)) {
       $("#msg").html("<p class='text-danger'>Invalid Ethereum address.</p>");
       return;
     }
 
-    App.contracts.Voting.deployed().then(function (instance) {
-      return instance.delegate(toAddress, { from: App.account });
-    }).then(function (result) {
-      $("#msg").html("<p class='text-success'>Vote successfully delegated to " + toAddress + ".</p>");
-    }).catch(function (err) {
-      console.error("Delegate Error: ", err.message);
-      $("#msg").html("<p class='text-danger'>Error delegating vote. You may have already voted or delegated.</p>");
-    });
+    try {
+      const instance = App.contracts.Voting;
+      await instance.delegateVote(toAddress, { from: App.account });
+      $("#msg").html(`<p class='text-success'>✅ Vote delegated to ${toAddress}</p>`);
+    } catch (err) {
+      console.error("Delegation Error:", err.message);
+      $("#msg").html("<p class='text-danger'>❌ Delegation failed.</p>");
+    }
+  },
+/*************************************************
+ *  findNumOfVotes                               *
+ *************************************************/
+findNumOfVotes: async function () {
+  try {
+    const instance = App.contracts.Voting;
+
+    /* 1️⃣  how many candidates?  */
+    const countBN = await instance.getNumOfCandidates();
+    const count   = countBN.toNumber();          // BN → plain number
+
+    $("#vote-box").empty();
+
+    /* 2️⃣  loop through each candidate */
+    for (let i = 0; i < count; i++) {
+      // getCandidate returns an object, not an array
+      const c        = await instance.getCandidate.call(i);
+      const idBN     = c[0];          // BN
+      const name     = c[1];          // string
+      const party    = c[2];          // string  (unused here)
+
+      /*  total votes for this candidate  */
+      const votesBN  = await instance.totalVotes.call(idBN);
+      const votes    = votesBN.toString();
+
+      /*  render one row  */
+      const row = `<p><strong>${name}</strong>: ${votes} vote(s)</p>`;
+      $("#vote-box").append(row);
+    }
+  } catch (err) {
+    console.error("Vote count error:", err);
+    $("#vote-box").html(
+      `<pre class="text-danger">Count error:\n${err.message || err}</pre>`
+    );
   }
+},
+ 
 };
 
-if (typeof web3 !== 'undefined') {
-  App.web3Provider = web3.currentProvider;
-} else {
-  App.web3Provider = new Web3.providers.HttpProvider("https://glowing-spork-r49rv6qv76935gwv-8545.app.github.dev/");
-}
-web3 = new Web3(App.web3Provider);
-
 $(function () {
-  // Ensure App is initialized before binding events
   App.init().then(() => {
-    // Bind events to buttons after App initialization
-    $("#registerBtn").click(function() {
-      App.registerVoter();
-    });
-
-    $("#voteBtn").click(function() {
-      App.vote();
-    });
-
-    $("#delegateBtn").click(function() {
-      App.delegateVote();
-    });
+    $("#registerButton").click(App.registerVoter);
   });
 });
+
