@@ -4,7 +4,8 @@ pragma solidity ^0.8.20;
 contract Voting {
     event AddedCandidate(uint indexed candidateID);
     event VoterRegistered(address indexed voter, bytes32 uid);
-    event DelegationSet(address indexed from, address indexed to);
+    event DelegationSet(address indexed from, address indexed to); 
+    event VoteCast(address indexed voter, uint indexed candidateID);
 
     address public owner;
 
@@ -75,14 +76,18 @@ contract Voting {
         emit DelegationSet(msg.sender, to);
     }
 
-    function vote(uint candidateID) external {
-    uint voterID = addressToVoterID[msg.sender];
-    require(voters[voterID].isRegistered, "Voter not registered");
-    require(!voters[voterID].hasDelegated, "Cannot vote if delegated");
-    require(candidates[candidateID].doesExist, "Candidate does not exist");
-    // No UID supplied – we trust the stored one
-    voters[voterID].candidateIDVote = candidateID;
- }
+
+      function vote(uint candidateID) public {
+        uint voterID = addressToVoterID[msg.sender];
+        require(voters[voterID].isRegistered, "Not registered");
+        require(!voters[voterID].hasDelegated,  "Already delegated");
+        require(candidates[candidateID].doesExist, "Candidate doesn't exist");
+
+        voters[voterID].candidateIDVote = candidateID;
+
+        // 🔔 EMIT the vote event
+        emit VoteCast(msg.sender, candidateID);
+    }
 
     
     function totalVotes(uint candidateID) public view returns (uint) {
