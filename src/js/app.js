@@ -16,22 +16,50 @@ window.App = {
     await App.initContract();
     App.bindEvents();
     await App.loadCandidates();
+    App.subscribeToVoteEvents();
+    setInterval(() => {
+      console.log("⏱️ Polling for latest vote counts…");
+      App.findNumOfVotes();
+    }, 5000);
   },
 
   initWeb3: async function () {
     if (window.ethereum) {
       App.web3Provider = window.ethereum;
       web3 = new Web3(window.ethereum);
+  
       try {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        const accounts = await web3.eth.getAccounts();
-        App.account = accounts[0];
+        // Request accounts and save the first as the "current" account
+        const allAccounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        App.account = allAccounts[0];
         console.log("🦊 MetaMask connected:", App.account);
+  
+        // Populate delegation dropdown
+        $("#delegateSelect").empty().append(
+          `<option value="" disabled selected>Choose account…</option>`
+        );
+        allAccounts.forEach(acc => {
+          if (acc.toLowerCase() !== App.account.toLowerCase()) {
+            $("#delegateSelect").append(
+              `<option value="${acc}">${acc}</option>`
+            );
+          }
+        });
+  
       } catch (err) {
         console.error("MetaMask connection rejected", err);
+        $("#msg")
+          .removeClass("text-success text-warning")
+          .addClass("text-danger")
+          .html("❌ Unable to connect to MetaMask");
       }
+  
     } else {
       console.error("🛑 No Ethereum provider found. Install MetaMask.");
+      $("#msg")
+        .removeClass("text-success text-warning")
+        .addClass("text-danger")
+        .html("🛑 No Ethereum provider found. Please install MetaMask.");
     }
   },
 
@@ -87,66 +115,118 @@ window.App = {
     }    
   },
 
+  
+
+  subscribeToVoteEvents: function () {
+    const web3Contract = new web3.eth.Contract(
+      VotingContract.abi,
+      App.contracts.Voting.address
+    );
+
+    web3Contract.events
+      .VoteCast({ fromBlock: "latest" })
+      .on("data", (ev) => {
+        console.log("🔔 VoteCast event:", ev.returnValues);
+        App.findNumOfVotes();
+      })
+      .on("error", (err) => {
+        console.error("VoteCast subscription error:", err);
+      });
+  },
+
   vote: async function () {
-    const uid = $("#id-input").val();
-    const candidateID = $("input[name='candidate']:checked").val();
-  
-    // ✅ Add these for debugging
-    console.log("UID entered:", uid);
-    console.log("Candidate selected:", candidateID);
-  
-    if (!uid || candidateID === undefined) {
-      $("#msg").html("<p class='text-danger'>Please enter your Voter ID and select a candidate.</p>");
-      return;
+    const candID = $("input[name='candidate']:checked").val();
+    if (candID === undefined) {
+      return $("#msg").html("<p class='text-danger'>Please select a candidate.</p>");
     }
-  
+
     try {
-      const instance = App.contracts.Voting;
-      await instance.vote(candidateID, { from: App.account });
-      $("#msg").html("<p class='text-success'>✅ Vote submitted successfully.</p>");
+      await App.contracts.Voting.vote(candID, { from: App.account });
+      $("#msg")
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .html("✅ Your vote has been cast.");
+      // No need to manually call findNumOfVotes(), the event listener will fire.
     } catch (err) {
-      console.error("Vote Error:", err.message);
-      $("#msg").html("<p class='text-danger'>❌ Error submitting vote.</p>");
+      console.error("Vote Error:", err);
+      const reason = err.data?.reason || err.message;
+      $("#msg")
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .html("❌ Vote failed: " + reason);
     }
   },
-  
 
   registerVoter: async function () {
-    const uid = $("#uidInput").val().trim();
+    const uid = $("#registration-id-input").val().trim();
     if (!uid) {
-    $("#msg").html("<p class='text-danger'>Please enter a UID first.</p>");
-    return;
+      return $("#msg").html(
+        "<p class='text-danger'>Please enter a UID to register.</p>"
+      );
     }
-
+  
     try {
       const instance = App.contracts.Voting;
-      await instance.registerVoter(web3.utils.asciiToHex(uid), { from: App.account });
-      $("#msg").html("<p class='text-success'>🎉 Registered successfully as a voter.</p>");
+      const uidHex   = web3.utils.asciiToHex(uid);
+      await instance.registerVoter(uidHex, { from: App.account });
+  
+      $("#msg")
+        .removeClass("text-danger text-warning")
+        .addClass("text-success")
+        .html("🎉 Registered successfully!");
     } catch (err) {
-      console.error("Register Error:", err.message);
-      $("#msg").html("<p class='text-danger'>❌ Already registered or failed.</p>");
+      // Grab the solidity revert message if present
+      const reason =
+        err.data?.reason ||
+        (err.data && Object.values(err.data)[0]?.reason) ||
+        err.message;
+  
+      console.error("Register Error reason:", reason);
+  
+      if (reason.includes("UID already registered")) {
+        $("#msg")
+          .removeClass("text-success text-danger")
+          .addClass("text-warning")
+          .html("⚠️ That UID is already taken. Please choose another.");
+      } else if (reason.includes("Address already registered")) {
+        $("#msg")
+          .removeClass("text-success text-warning")
+          .addClass("text-warning")
+          .html("⚠️ This wallet is already registered. Switch accounts or reset the chain.");
+      } else {
+        $("#msg")
+          .removeClass("text-success text-warning")
+          .addClass("text-danger")
+          .html("❌ Registration failed: " + reason);
+      }
     }
-  },
+  },  
 
+  
   delegateVote: async function () {
-    const toAddress = $("#delegateAddress").val();
-    if (!web3.utils.isAddress(toAddress)) {
-      $("#msg").html("<p class='text-danger'>Invalid Ethereum address.</p>");
-      return;
+    const to = $("#delegateSelect").val();
+    if (!to) {
+      return $("#msg").html("<p class='text-danger'>Please choose an account</p>");
     }
-
+  
     try {
-      const instance = App.contracts.Voting;
-      await instance.delegateVote(toAddress, { from: App.account });
-      $("#msg").html(`<p class='text-success'>✅ Vote delegated to ${toAddress}</p>`);
+      await App.contracts.Voting.delegateVote(to, { from: App.account });
+      $("#msg").html(`<p class='text-success'>✅ Vote delegated to ${to}</p>`);
     } catch (err) {
-      console.error("Delegation Error:", err.message);
-      $("#msg").html("<p class='text-danger'>❌ Delegation failed.</p>");
+      const reason = err.data?.reason || err.message;
+      console.error("Delegation Error:", err);
+      if (reason.includes("Not registered")) {
+        $("#msg").html(
+          "<p class='text-warning'>⚠️ You must register as a voter before you can delegate.</p>"
+        );
+      } else {
+        $("#msg").html(
+          `<p class='text-danger'>❌ Delegation failed: ${reason}</p>`
+        );
+      }
     }
-  },
-/*************************************************
- *  findNumOfVotes                               *
- *************************************************/
+  },  
+
 findNumOfVotes: async function () {
   try {
     const instance = App.contracts.Voting;
