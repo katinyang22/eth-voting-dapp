@@ -22,40 +22,34 @@
     <div class="container">
       <h1 class="mb-4">🗳️ Ethereum Voting DApp</h1>
 
-      <!-- Section: Voter Registration -->
-      <section class="mb-4">
-        <h2>Register as Voter</h2>
-      
-        <!-- show the currently‑selected MetaMask address -->
-        <div class="mb-2">
-          <label class="form-label">Connected wallet</label>
-          <input id="walletAddress" class="form-control w-50" type="text" readonly>
+    <!-- Section: Voter Registration -->
+    <section id="registration-section" class="mb-4">
+      <h2>Register as Voter</h2>
+      <p>Enter your Voter ID then click Register:</p>
+      <div class="mb-2">
+        <input
+          type="text"
+          id="registration-id-input"
+          class="form-control w-50"
+          placeholder="Enter your Voter ID"
+        />
+      </div>
+      <button id="registerButton" class="btn btn-success">Register</button>
+    </section>
+    
+    <section id="delegation-section" class="mb-4">
+      <h2>Delegate Your Vote</h2>
+      <div class="row g-2">
+        <div class="col-auto">
+          <select id="delegateSelect" class="form-select">
+            <option value="" disabled selected>Choose account…</option>
+          </select>
         </div>
-      
-        <!-- user chooses / types the UID they want stored on‑chain -->
-        <div class="mb-2">
-          <label class="form-label">Choose a Voter UID (any short string)</label>
-          <input id="uidInput" class="form-control w-50" type="text"
-                 placeholder="e.g. alice01">
+        <div class="col-auto">
+          <button id="delegateBtn" class="btn btn-warning">Delegate Vote</button>
         </div>
-      
-        <button id="registerButton" class="btn btn-success">
-          Register This Wallet
-        </button>
-      </section>
-
-      <!-- Section: Vote Delegation -->
-      <section class="mb-4">
-        <h2>Delegate Your Vote</h2>
-        <div class="row g-2">
-          <div class="col-auto">
-            <input type="text" id="delegateAddress" class="form-control" placeholder="Enter address (0x...)" />
-          </div>
-          <div class="col-auto">
-            <button id="delegateBtn" class="btn btn-warning">Delegate Vote</button>
-          </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
       <!-- Section: Voting -->
       <section class="mb-4">
