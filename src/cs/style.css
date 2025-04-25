@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  background-color: #f7faff;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+/* Header */
+.site-header {
+  background-color: #1E40AF; /* primary blue */
+  color: white;
+  padding: 1rem 0;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.site-header h1 {
+  font-size: 1.75rem;
+}
+
+/* Navigation */
+.nav-pills {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.nav-pills .nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.nav-pills .nav-link:hover,
+.nav-pills .nav-link.active {
+  background-color: #3B82F6; /* secondary blue */
+}
+
+/* Container */
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Sections/Cards */
+.card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+}
+
+/* Forms */
+.form-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.form-control,
+.form-select {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #3B82F6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-success {
+  background-color: #10B981;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+.btn-warning {
+  background-color: #F59E0B;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #D97706;
+}
+
+.btn-primary {
+  background-color: #1E40AF;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1E3A8A;
+}
+
+.btn-info {
+  background-color: #0EA5E9;
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #0284C7;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none;
+}
+
+.d-none {
+  display: none;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.fw-bold {
+  font-weight: 700;
+}
+
+.text-danger {
+  color: #DC2626;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.results-list p,
+.candidate-list .form-check {
+  margin-bottom: 0.75rem;
+}
