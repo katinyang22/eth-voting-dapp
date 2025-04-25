@@ -1,6 +1,6 @@
 import Web3 from "web3";
 import votingArtifacts from "../../build/contracts/Voting.json";
-import "../css/style.css";
+import "../cs/style.css";
 import contract from "@truffle/contract";
 
 let web3;
