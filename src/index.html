@@ -3,22 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>Ethereum Voting DApp</title>
+
+  <!-- your base/layout/components CSS + soft blue theme -->
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
+
+  <!-- soft font -->
   <link
-  href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
-  rel="stylesheet"
-/>
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- jQuery + Web3 + Truffle Contract if needed by bundle.js -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
   <header class="site-header">
     <h1>🗳️ Ethereum Voting DApp</h1>
-    <nav>
-      <a href="#register">Register</a>
-      <a href="#delegate">Delegate</a>
-      <a href="#vote">Vote</a>
-      <a href="#results">Results</a>
+    <nav class="nav-pills">
+      <a href="#register" class="nav-link active">Register</a>
+      <a href="#delegate" class="nav-link">Delegate</a>
+      <a href="#vote"     class="nav-link">Vote</a>
+      <a href="#results"  class="nav-link">Results</a>
     </nav>
   </header>
 
@@ -26,37 +33,66 @@
     <section id="register" class="card">
       <h2>Register as Voter</h2>
       <div class="form-group">
-        <input id="registration-id-input" placeholder="Enter UID…" />
-        <button id="registerButton" class="btn">Register</button>
+        <input id="registration-id-input" class="form-control" placeholder="Enter UID…" />
+        <button id="registerButton" class="btn btn-success">Register</button>
       </div>
     </section>
 
-    <section id="delegate" class="card">
+    <section id="delegate" class="card d-none">
       <h2>Delegate Your Vote</h2>
       <div class="form-group">
-        <select id="delegateSelect" class="form-select">
+        <select id="delegateSelect" class="form-select mb-2">
           <option value="" disabled selected>Select delegate…</option>
         </select>
-        <button id="delegateBtn" class="btn">Delegate</button>
+        <button id="delegateBtn" class="btn btn-warning">Delegate</button>
       </div>
     </section>
 
-    <section id="vote" class="card">
+    <section id="vote" class="card d-none">
       <h2>Vote</h2>
-      <div class="form-group">
-        <input id="id-input" placeholder="Your UID…" />
+      <div class="form-group mb-2">
+        <input id="id-input" class="form-control w-50" placeholder="Your UID…" />
       </div>
-      <div id="candidate-box" class="candidate-list"></div>
-      <button id="voteBtn" class="btn">Submit Vote</button>
+      <div id="candidate-box" class="candidate-list mb-3"><!-- radios go here --></div>
+      <button id="voteBtn" class="btn btn-primary">Submit Vote</button>
     </section>
 
-    <section id="results" class="card">
+    <section id="results" class="card d-none">
       <h2>Results</h2>
-      <button id="countVotesBtn" class="btn">Refresh Counts</button>
+      <button id="countVotesBtn" class="btn btn-info mb-2">Refresh Counts</button>
       <div id="vote-box" class="results-list"></div>
     </section>
   </main>
 
+  <div id="msg" class="mt-4 fw-bold text-danger text-center"></div>
+
+  <!-- your bundled logic (App.init, loadCandidates, etc.) -->
   <script src="bundle.js" defer></script>
+
+  <!-- small nav‐tabs script *after* bundle.js -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const $links   = $('header nav .nav-link');
+      const $cards   = $('main section.card');
+
+      function showSection(id) {
+        $cards.addClass('d-none');
+        $(id).removeClass('d-none');
+        $links.removeClass('active');
+        $links.filter(`[href="${id}"]`).addClass('active');
+        $('#msg').text('');
+      }
+
+      // wire up clicks
+      $links.on('click', e => {
+        e.preventDefault();
+        const id = $(e.currentTarget).attr('href');
+        showSection(id);
+      });
+
+      // on load, show the first (register)
+      showSection('#register');
+    });
+  </script>
 </body>
 </html>
