@@ -1,0 +1,59 @@
+/* components.css */
+.card {
+    background: #fff;
+    border: 1px solid var(--color-secondary);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-secondary);
+    border-radius: var(--radius);
+    font-size: 1rem;
+  }
+  
+  .btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-primary-dark);
+  }
+  
+  .btn-success {
+    background-color: #50c878;
+    color: #fff;
+  }
+  .btn-warning {
+    background-color: #f5a623;
+    color: #fff;
+  }
+  .btn-info {
+    background-color: #5bc0de;
+    color: #fff;
+  }
+  
+  .results-list p {
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--color-secondary);
+  }
+  
