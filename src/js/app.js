@@ -6,6 +6,29 @@ import contract from "@truffle/contract";
 let web3;
 let VotingContract = contract(votingArtifacts);
 
+// --- at the top, before App.init ---
+window.App.showSection = function(sectionId) {
+  // hide everything
+  $('#registration-section, #delegation-section, #voting-section, #results-section')
+    .hide();
+
+  // show the one you asked for
+  $('#' + sectionId).show();
+
+  // only show Back when we're NOT on registration
+  if (sectionId !== 'registration-section') {
+    $('#backButton').removeClass('d-none');
+  } else {
+    $('#backButton').addClass('d-none');
+  }
+};
+
+// --- inside App.bindEvents, after your other bindings ---
+$('#backButton').click(function() {
+  App.showSection('registration-section');
+});
+
+
 window.App = {
   web3Provider: null,
   contracts: {},
@@ -66,6 +89,9 @@ window.App = {
     $("#voteBtn").click(App.vote);
     $("#delegateBtn").click(App.delegateVote);
     $("#countVotesBtn").click(App.findNumOfVotes);
+    $('#backButton').click(function() {
+      App.showSection('registration-section');
+    })
   },
 
   checkRegistration: async function() {
