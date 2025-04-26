@@ -9,6 +9,12 @@ module.exports = {
     filename: "bundle.js",
   },
   mode: "development",
+  ignoreWarnings: [
+    {
+      module: /ethers\.min\.js$/,
+      message: /require function is used in a way in which dependencies cannot be statically extracted/
+    }
+  ],
   plugins: [
     new CopyWebpackPlugin({
       patterns: [
