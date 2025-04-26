@@ -167,3 +167,12 @@ body {
 .candidate-list .form-check {
   margin-bottom: 0.75rem;
 }
+
+.d-none { display: none !important; }
+.btn-link {
+  background: none;
+  border: none;
+  color: #1e3a8a;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
