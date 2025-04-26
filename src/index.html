@@ -4,109 +4,71 @@
   <meta charset="UTF-8" />
   <title>Ethereum Voting DApp</title>
 
-  <!-- Your styles -->
   <link rel="stylesheet" href="cs/style.css" />
 
-  <!-- Soft “Open Sans” font -->
   <link
     href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
 
-  <!-- jQuery, Web3, Truffle Contract -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@1.9.0/dist/web3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/truffle-contract@4.0.31/dist/truffle-contract.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Your app logic -->
-  <script src="bundle.js"></script>
-  <script>
-    // (optional) extend your color palette
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#1E40AF',    // deep blue
-            secondary: '#3B82F6',  // light blue
-          }
-        }
-      }
-    }
-  </script>
+  <script src="bundle.js" ></script>
 </head>
-
 <body>
   <header class="site-header">
     <h1>🗳️ Ethereum Voting DApp</h1>
-    </header>
+    <nav class="nav-pills">
+      <a href="#register" class="nav-link active">Register</a>
+      <a href="#delegate" class="nav-link">Delegate</a>
+      <a href="#vote"     class="nav-link">Vote</a>
+      <a href="#results"  class="nav-link">Results</a>
+    </nav>
+  </header>
 
-    <!-- one shared “Back” control -->
-  <div class="container text-left my-4">
+  <!-- single back button -->
+  <div class="container text-left my-2">
     <button id="backButton" class="btn btn-link d-none">
       ← Back to Register
     </button>
   </div>
 
   <main class="container">
-    <!-- Registration -->
-    <section id="registration-section" class="card">
+    <section id="register" class="card">
       <h2>Register as Voter</h2>
       <div class="form-group">
-        <input
-          id="registration-id-input"
-          class="form-control"
-          placeholder="Enter a unique UID…"
-        />
-        <button id="registerButton" class="btn btn-success">
-          Register
-        </button>
+        <input id="registration-id-input" class="form-control" placeholder="Enter UID…" />
+        <button id="registerButton" class="btn btn-success">Register</button>
       </div>
     </section>
 
-    <!-- Delegation -->
-    <section id="delegation-section" class="card d-none">
+    <section id="delegate" class="card d-none">
       <h2>Delegate Your Vote</h2>
       <div class="form-group">
         <select id="delegateSelect" class="form-select mb-2">
           <option value="" disabled selected>Select delegate…</option>
         </select>
-        <button id="delegateBtn" class="btn btn-warning">
-          Delegate Vote
-        </button>
+        <button id="delegateBtn" class="btn btn-warning">Delegate</button>
       </div>
     </section>
 
-    <!-- Voting -->
-    <section id="voting-section" class="card d-none">
+    <section id="vote" class="card d-none">
       <h2>Cast Your Vote</h2>
       <div class="form-group mb-2">
-        <input
-          id="id-input"
-          class="form-control w-50"
-          placeholder="Your UID…"
-        />
+        <input id="id-input" class="form-control w-50" placeholder="Your UID…" />
       </div>
-      <div id="candidate-box" class="candidate-list mb-3">
-        <!-- radios injected by app.js -->
-      </div>
-      <button id="voteBtn" class="btn btn-primary">
-        Submit Vote
-      </button>
+      <div id="candidate-box" class="candidate-list mb-3"></div>
+      <button id="voteBtn" class="btn btn-primary">Submit Vote</button>
     </section>
 
-    <!-- Results -->
-    <section id="results-section" class="card d-none">
+    <section id="results" class="card d-none">
       <h2>Results</h2>
-      <button id="countVotesBtn" class="btn btn-info mb-2">
-        Refresh Counts
-      </button>
-      <div id="vote-box" class="results-list">
-        <!-- vote counts injected by app.js -->
-      </div>
+      <button id="countVotesBtn" class="btn btn-info mb-2">Refresh Counts</button>
+      <div id="vote-box" class="results-list"></div>
     </section>
   </main>
 
-  <!-- Global message area -->
-  <div id="msg" class="mt-4 text-center fw-bold text-danger"></div>
+  <div id="msg" class="mt-4 fw-bold text-danger text-center"></div>
 </body>
 </html>
